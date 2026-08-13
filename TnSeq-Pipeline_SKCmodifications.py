@@ -603,7 +603,7 @@ class hops_pipeline(object):
 							if score < 40:
 								pass
 							else:
-								ref_name = sam_entry[2].split('|')[3][:-2]
+								ref_name = sam_entry[2]#.split('|')[3][:-2]
 								strand = '+'
 								if code == "16":
 									strand = '-'
@@ -809,4 +809,3 @@ if __name__ == "__main__":
 	import sys
 	print(sys.version)
 	main()
-

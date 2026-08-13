@@ -261,11 +261,12 @@ def read_gff(gff_path):
             columns = line.split("\t")
 
             if len(columns) < 9:
-                print(
-                    f"WARNING: skipping malformed GFF line {line_number}: "
-                    f"expected 9 columns, found {len(columns)}",
-                    file=sys.stderr,
-                )
+                # prints even for normal fasta in end of gff
+                # print(
+                #     f"WARNING: skipping malformed GFF line {line_number}: "
+                #     f"expected 9 columns, found {len(columns)}",
+                #     file=sys.stderr,
+                # )
                 continue
 
             seqid = columns[0]

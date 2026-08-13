@@ -4,7 +4,8 @@
 # If this script is NOT currently running inside SLURM,
 # submit one separate SLURM job for every demultiplexed FASTQ.
 # ============================================================
-
+module load miniforge3
+conda activate TnSeqPreProcess
 if [[ -z "${SLURM_JOB_ID:-}" ]]; then
 
     if [[ $# -lt 1 ]]; then
@@ -98,7 +99,7 @@ P5_ADAPTER="${P5_ADAPTER:-AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCG
 # Demultiplexed input is assumed to have its inline barcode removed already.
 # If the barcode is still present at the 5' end, run with TRIM_5P=9 (or the
 # appropriate barcode length).
-TRIM_5P="${TRIM_5P:-0}"
+TRIM_5P="${TRIM_5P:-9}"
 
 QUALITY=20
 PERCENT=90
@@ -186,6 +187,8 @@ CUTADAPT_ARGS=(
     -a "${P3_ADAPTER}"
     -a "C{${C_TAIL_LENGTH}}"
     -a "G{${G_TAIL_LENGTH}}"
+    --times 3
+    --minimum-length 16
     -o "$TRIMMED_FASTQ"
 )
 
