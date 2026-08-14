@@ -2,7 +2,7 @@
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
 
 set -eo pipefail
@@ -87,6 +87,7 @@ python3 "${SCRIPT_DIR}/gff_to_ptt.py" \
 
 # The glob deliberately includes every filtered sample in this batch. The
 # legacy pipeline treats these files as conditions in one normalized table.
+# trying to make read length longer and not do a preemptive trim
 cat > "$CONFIG_FILE" <<EOF
 [input]
 Reads           = ${PREPROCESS_DIR}/*/final/*_filtered.fastq.gz
@@ -95,7 +96,7 @@ Ptt             = $PTT_DIR/*.ptt
 Out             = $OUTPUT_NAME
 
 [parameters]
-Transposon      =
+Transposon      = 
 MinBaseOffset   = 0
 MaxBaseOffset   = 0
 Mismatches      = 0

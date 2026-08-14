@@ -95,11 +95,11 @@ G_TAIL_LENGTH="${G_TAIL_LENGTH:-100}"
 # searched for at the 3' end of short-insert reads.
 P3_ADAPTER="${P3_ADAPTER:-GATCGGAAGAGCACACGTCTGAACTCCAGTCACATCACGATCTCGTATGCCGTCTTCTGCTT}"
 P5_ADAPTER="${P5_ADAPTER:-AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCTTTTTTCGAGATGTGTATAAGAGACAG}"
+# Tn5 transposon: # AGATGTGTATAAGAGACAGG
 
-# Demultiplexed input is assumed to have its inline barcode removed already.
-# If the barcode is still present at the 5' end, run with TRIM_5P=9 (or the
-# appropriate barcode length).
-TRIM_5P="${TRIM_5P:-9}"
+# Remove the protocol's 9-base inline barcode from the 5' end by default.
+# Override with TRIM_5P=0 to retain it, or set the appropriate barcode length.
+TRIM_5P="${TRIM_5P:-0}"
 
 QUALITY=20
 PERCENT=90
@@ -182,6 +182,7 @@ FINAL_FASTQ="${FINAL_DIR}/${SAMPLE}_filtered.fastq.gz"
 echo
 echo "Step 1: Removing adapters and 3' poly-C/poly-G tails from $SAMPLE..."
 
+# Previous adapter and homopolymer-tail trimming command:
 CUTADAPT_ARGS=(
     -g "X${P5_ADAPTER}"
     -a "${P3_ADAPTER}"
@@ -190,6 +191,7 @@ CUTADAPT_ARGS=(
     --times 3
     --minimum-length 16
     -o "$TRIMMED_FASTQ"
+    -j 16
 )
 
 if (( TRIM_5P > 0 )); then
@@ -198,6 +200,32 @@ if (( TRIM_5P > 0 )); then
 fi
 
 cutadapt "${CUTADAPT_ARGS[@]}" "$INPUT"
+
+# # Trim the protocol's 3' adapter and terminal poly-C/poly-G tails. Require a
+# # 20-base overlap for each match to avoid trimming short, natural C/G-rich ends.
+# # Retain only adapter-trimmed reads that meet the requested length and
+# # ambiguous-base thresholds.
+# CUTADAPT_5P_ARGS=()
+# if (( TRIM_5P > 0 )); then
+#     echo "Also removing $TRIM_5P base(s) from the 5' end."
+#     CUTADAPT_5P_ARGS+=( -u "$TRIM_5P" )
+# fi
+
+# # cutadapt \
+# #     -j 4 \
+# #     "${CUTADAPT_5P_ARGS[@]}" \
+# #     -a "${P3_ADAPTER}" \
+# #     -a "C{100};min_overlap=10" \
+# #     -a "G{100};min_overlap=10" \
+# #     --output "$TRIMMED_FASTQ" \ls
+# #     --error-rate 0.1 \
+# #     --times 3 \
+# #     --overlap 20 \
+# #     --action trim \
+# #     --discard-untrimmed \
+# #     --minimum-length 16 \
+# #     --max-n 0.5 \
+# #     "$INPUT"
 
 
 # ============================================================
