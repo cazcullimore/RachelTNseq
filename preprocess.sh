@@ -96,6 +96,7 @@ G_TAIL_LENGTH="${G_TAIL_LENGTH:-100}"
 P3_ADAPTER="${P3_ADAPTER:-GATCGGAAGAGCACACGTCTGAACTCCAGTCACATCACGATCTCGTATGCCGTCTTCTGCTT}"
 P5_ADAPTER="${P5_ADAPTER:-AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCTTTTTTCGAGATGTGTATAAGAGACAG}"
 # Tn5 transposon: # AGATGTGTATAAGAGACAGG
+TRANSPOSON="${TRANSPOSON:-AGATGTGTATAAGAGACAGG}"
 
 # Remove the protocol's 9-base inline barcode from the 5' end by default.
 # Override with TRIM_5P=0 to retain it, or set the appropriate barcode length.
@@ -140,6 +141,12 @@ if [[ ! "$P5_ADAPTER" =~ ^[ACGTacgt]+$ ]]; then
     exit 1
 fi
 
+if [[ ! "$TRANSPOSON" =~ ^[ACGTacgt]+$ ]]; then
+    echo "ERROR: TRANSPOSON must contain only A, C, G, and T."
+    exit 1
+fi
+TRANSPOSON=$(printf '%s' "$TRANSPOSON" | tr '[:lower:]' '[:upper:]')
+
 
 # ============================================================
 # Determine input sample name
@@ -172,6 +179,7 @@ mkdir -p \
 echo "Output directory: $OUTDIR"
 
 TRIMMED_FASTQ="${TRIMMED_DIR}/${SAMPLE}_adapter_ctail_trimmed.fastq.gz"
+TRANSPOSON_FASTQ="${TRIMMED_DIR}/${SAMPLE}_transposon_trimmed.fastq.gz"
 FINAL_FASTQ="${FINAL_DIR}/${SAMPLE}_filtered.fastq.gz"
 
 
@@ -201,6 +209,29 @@ fi
 
 cutadapt "${CUTADAPT_ARGS[@]}" "$INPUT"
 
+
+# ============================================================
+# Step 2: Require and remove the 5' transposon
+# ============================================================
+
+echo
+echo "Step 2: Requiring and removing the 5' transposon from $SAMPLE..."
+echo "Transposon: $TRANSPOSON"
+echo "Reads without this 5' transposon will be discarded."
+
+# The ^ anchor restricts the transposon match to the start of the read.
+# Keeping this separate makes --discard-untrimmed apply specifically to the
+# transposon. Cutadapt prints the total, retained, and discarded read counts
+# in the report below.
+cutadapt \
+    -g "${TRANSPOSON}" \
+    --discard-untrimmed \
+    -o "$TRANSPOSON_FASTQ" \
+    -j 16 \
+    --minimum-length 16 \
+    "$TRIMMED_FASTQ"
+    
+
 # # Trim the protocol's 3' adapter and terminal poly-C/poly-G tails. Require a
 # # 20-base overlap for each match to avoid trimming short, natural C/G-rich ends.
 # # Retain only adapter-trimmed reads that meet the requested length and
@@ -229,16 +260,16 @@ cutadapt "${CUTADAPT_ARGS[@]}" "$INPUT"
 
 
 # ============================================================
-# Step 2: Quality filtering
+# Step 3: Quality filtering
 # ============================================================
 
 echo
-echo "Step 2: Quality filtering $SAMPLE..."
+echo "Step 3: Quality filtering $SAMPLE..."
 
 FINAL_FASTQ_TMP="${FINAL_FASTQ}.tmp.$$"
 trap 'rm -f "$FINAL_FASTQ_TMP"' EXIT
 
-gzip -dc -- "$TRIMMED_FASTQ" \
+gzip -dc -- "$TRANSPOSON_FASTQ" \
     | fastq_quality_filter \
         -q "$QUALITY" \
         -p "$PERCENT" \
