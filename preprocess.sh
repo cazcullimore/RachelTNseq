@@ -33,9 +33,9 @@ if [[ -z "${SLURM_JOB_ID:-}" ]]; then
             --job-name="preprocess_$(basename "$INPUT" .fastq.gz)" \
             --output="preprocess_%j.out" \
             --error="preprocess_%j.err" \
-            --time=04:00:00 \
-            --cpus-per-task=4 \
-            --mem=16G \
+            --time=08:00:00 \
+            --cpus-per-task=24 \
+            --mem=64G \
             "$0" "$INPUT"
     done
 
@@ -94,7 +94,7 @@ G_TAIL_LENGTH="${G_TAIL_LENGTH:-100}"
 # removed at the read start, but an internal match is not removed. P3 is
 # searched for at the 3' end of short-insert reads.
 P3_ADAPTER="${P3_ADAPTER:-GATCGGAAGAGCACACGTCTGAACTCCAGTCACATCACGATCTCGTATGCCGTCTTCTGCTT}"
-P5_ADAPTER="${P5_ADAPTER:-AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCTTTTTTCGAGATGTGTATAAGAGACAG}"
+P5_ADAPTER="${P5_ADAPTER:-AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCTTTTTTCGAGATGTGTATAAGAGACAG}" # add a G
 # Tn5 transposon: # AGATGTGTATAAGAGACAGG
 TRANSPOSON="${TRANSPOSON:-AGATGTGTATAAGAGACAGG}"
 
@@ -191,15 +191,15 @@ echo
 echo "Step 1: Removing adapters and 3' poly-C/poly-G tails from $SAMPLE..."
 
 # Previous adapter and homopolymer-tail trimming command:
+    # -g "X${P5_ADAPTER}"  # this contains the transposon will try like this and then with p5 instead of transposon
 CUTADAPT_ARGS=(
-    -g "X${P5_ADAPTER}"
     -a "${P3_ADAPTER}"
     -a "C{${C_TAIL_LENGTH}}"
     -a "G{${G_TAIL_LENGTH}}"
     --times 3
     --minimum-length 16
     -o "$TRIMMED_FASTQ"
-    -j 16
+    -j 24
 )
 
 if (( TRIM_5P > 0 )); then
@@ -219,7 +219,6 @@ echo "Step 2: Requiring and removing the 5' transposon from $SAMPLE..."
 echo "Transposon: $TRANSPOSON"
 echo "Reads without this 5' transposon will be discarded."
 
-# The ^ anchor restricts the transposon match to the start of the read.
 # Keeping this separate makes --discard-untrimmed apply specifically to the
 # transposon. Cutadapt prints the total, retained, and discarded read counts
 # in the report below.
@@ -227,7 +226,7 @@ cutadapt \
     -g "${TRANSPOSON}" \
     --discard-untrimmed \
     -o "$TRANSPOSON_FASTQ" \
-    -j 16 \
+    -j 24 \
     --minimum-length 16 \
     "$TRIMMED_FASTQ"
     

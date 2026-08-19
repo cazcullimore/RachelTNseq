@@ -460,7 +460,7 @@ class hops_pipeline(object):
 			#                    "-f",self.int_trimmed[out_file_num].name, "-D" , "25" , "-R" ,"3", "-L" , "10" , "-i" , "S,1,0.50" ,
 			#                    "-S",self.int_sam[out_file_num], "--no-hd"]
 
-			bowtie_command = ["bowtie2", "-x", self.ref,"--phred33",
+			bowtie_command = ["bowtie2", "-x", self.ref,"--phred33", "-p", "24",
 								"-f",self.int_trimmed[out_file_num].name,
 								"-S",self.int_sam[out_file_num]]
 								
