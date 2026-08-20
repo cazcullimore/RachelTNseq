@@ -88,6 +88,12 @@ python3 "${SCRIPT_DIR}/gff_to_ptt.py" \
 # The glob deliberately includes every filtered sample in this batch. The
 # legacy pipeline treats these files as conditions in one normalized table.
 # trying to make read length longer and not do a preemptive trim
+#paramts tried for pieplien removal
+# Transposon      = AGATGTGTATAAGAGACAGG
+# MinBaseOffset   = 7
+# MaxBaseOffset   = 12
+# Mismatches      = 3
+
 cat > "$CONFIG_FILE" <<EOF
 [input]
 Reads           = ${PREPROCESS_DIR}/*/final/*_filtered.fastq.gz

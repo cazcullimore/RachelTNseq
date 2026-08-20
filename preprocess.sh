@@ -94,7 +94,10 @@ G_TAIL_LENGTH="${G_TAIL_LENGTH:-100}"
 # removed at the read start, but an internal match is not removed. P3 is
 # searched for at the 3' end of short-insert reads.
 P3_ADAPTER="${P3_ADAPTER:-GATCGGAAGAGCACACGTCTGAACTCCAGTCACATCACGATCTCGTATGCCGTCTTCTGCTT}"
-P5_ADAPTER="${P5_ADAPTER:-AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCTTTTTTCGAGATGTGTATAAGAGACAG}" # add a G
+# og adapter
+# P5_ADAPTER="${P5_ADAPTER:-AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCTTTTTTCGAGATGTGTATAAGAGACAG}" # add a G
+# adapter containing complete transposon
+P5_ADAPTER="${P5_ADAPTER:-AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCTTTTTTCGAGATGTGTATAAGAGACAGG}" 
 # Tn5 transposon: # AGATGTGTATAAGAGACAGG
 TRANSPOSON="${TRANSPOSON:-AGATGTGTATAAGAGACAGG}"
 
@@ -229,6 +232,10 @@ cutadapt \
     -j 24 \
     --minimum-length 16 \
     "$TRIMMED_FASTQ"
+#params for 5' removal
+# -g "${P5_ADAPTER}" \
+# params for piepline removal
+# cp "$TRIMMED_FASTQ" "$TRANSPOSON_FASTQ"
     
 
 # # Trim the protocol's 3' adapter and terminal poly-C/poly-G tails. Require a
@@ -282,6 +289,8 @@ trap - EXIT
 # ============================================================
 # Finished
 # ============================================================
+echo removing intermediate files
+rm -r "$TRIMMED_DIR"
 
 echo
 echo "========================================"
