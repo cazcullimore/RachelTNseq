@@ -16,7 +16,34 @@ this is basically Tyler's setup with a couple modifications
 I added code that generates a PTT file from a GFF since PTT is ancient. This file is used to know where the genes start and end.
 
 ## Then everything is fed into TnSeq-Pipeline_SKCmodifications
-this is the same as Tyler's
+By default, Bowtie2 now aligns the filtered FASTQs from `preprocess.sh` directly,
+including `.fastq.gz` files. This preserves the remaining read lengths and
+Phred+33 base-quality scores; the Python pipeline skips its internal transposon
+removal, read truncation, reverse complementation, and FASTA conversion.
+External preprocessing still runs when using `submit_samples.sh`.
+
+The generated `tnSeq.config` includes these settings:
+
+```ini
+[parameters]
+Transposon =
+ReadLength = -1
+
+[options]
+DirectFastq = True
+ReverseComplementReads = False
+```
+
+`DirectFastq` defaults to `True` when omitted. It requires the other settings
+shown above and FASTQ input; conflicting settings cause an error. Set
+`DirectFastq = False` to use the legacy internal preprocessing and FASTA
+alignment path. When submitting with `analyze_samples.sbatch`, change its config
+template rather than an old generated config.
+
+Direct alignment does not change the MAPQ >=40 filter, gene-end trimming,
+minimum insertion-count filter, or normalization. Gene counting still runs
+after alignment. Existing input FASTQs are never deleted by analysis cleanup.
+
 1. aligns reads against the reference
 1. maps read counts to the genes
 1. normalizes counts to intergeneic inserts as well as between samples (CHECK)

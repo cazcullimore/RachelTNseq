@@ -44,6 +44,7 @@ class hops_pipeline(object):
 		self.delete_intermediate_files = True
 		self.check_transposon = True
 		self.reverse_complement_reads = False
+		self.direct_fastq = True
 		self.igv_normalize = False
 		self.negateIGV = False
 		########### End From Config ###########
@@ -189,6 +190,17 @@ class hops_pipeline(object):
 			sys.exit('Error with IGVNormalize parameter')
 
 		try:
+			if cp.has_option('options', 'DirectFastq'):
+				self.direct_fastq = cp.getboolean('options', 'DirectFastq')
+		except ValueError:
+			sys.exit('Error with DirectFastq parameter (Not True/False).')
+		if self.direct_fastq:
+			if self.check_transposon or self.read_length != -1 or self.reverse_complement_reads:
+				sys.exit('DirectFastq requires an empty Transposon, ReadLength = -1, and ReverseComplementReads = False. Set DirectFastq = False for legacy preprocessing.')
+			if not all(f.lower().endswith(('.fastq', '.fq', '.fastq.gz', '.fq.gz')) for f in self.input_files):
+				sys.exit('DirectFastq requires FASTQ inputs (.fastq, .fq, optionally .gz).')
+
+		try:
 			self.negateIGV = cp.getboolean('options','IGVNegateNegStrand')
 		except:
 			sys.exit('Error with IGVNormalize parameter')
@@ -222,17 +234,16 @@ class hops_pipeline(object):
 			file_prefix = os.path.basename(f).split('.')[0]
 			self.int_prefix.append(file_prefix)
 
-			#create both trimmed and sam intermediate names for this particular input file.
-			trimmed = ""
-			fi = None
-			trimmed = self.output_directory + "intermediate_files/" + file_prefix + "-trimmed.fasta"
-			fi = open(trimmed,'w')
-
-			self.int_trimmed.append(fi)
+			if not self.direct_fastq:
+				trimmed = self.output_directory + "intermediate_files/" + file_prefix + "-trimmed.fasta"
+				self.int_trimmed.append(open(trimmed, 'w'))
 			self.int_sam.append(self.output_directory + "intermediate_files/" + file_prefix + ".sam")
 
 	def run_pipeline(self):
-		self.process_reads()
+		if self.direct_fastq:
+			logging.info('Aligning input FASTQs directly; preserving sequences and base qualities without internal preprocessing.')
+		else:
+			self.process_reads()
 		self.call_bowtie2()
 		self.process_sam()
 		self.print_time_output("Total run time,", self.starttime)
@@ -456,13 +467,12 @@ class hops_pipeline(object):
 		for out_file_num in range(self.num_conditions):
 			start_time = time()
 			
-			#bowtie_command = ["bowtie2", "-x", self.ref,"--phred33",
-			#                    "-f",self.int_trimmed[out_file_num].name, "-D" , "25" , "-R" ,"3", "-L" , "10" , "-i" , "S,1,0.50" ,
-			#                    "-S",self.int_sam[out_file_num], "--no-hd"]
-
 			bowtie_command = ["bowtie2", "-x", self.ref,"--phred33", "-p", "24",
-								"-f",self.int_trimmed[out_file_num].name,
 								"-S",self.int_sam[out_file_num]]
+			if self.direct_fastq:
+				bowtie_command.extend(["-q", "-U", self.input_files[out_file_num]])
+			else:
+				bowtie_command.extend(["-f", self.int_trimmed[out_file_num].name])
 								
 
 			logging.info("Bowtie Command Used: " + ' '.join(bowtie_command)+"\n\n")
@@ -477,12 +487,13 @@ class hops_pipeline(object):
 				sys.exit('Exiting')
 
 			self.print_time_output("Bowtie2",start_time)
-			if self.delete_intermediate_files:		
-				logging.info("Deleted trimmed Fasta file.")
-				subprocess.check_output(["rm",self.int_trimmed[out_file_num].name])
-			else:
-				logging.info("Zipping up trimmed file.\n")
-				subprocess.check_output(["gzip","-f", self.int_trimmed[out_file_num].name])
+			if not self.direct_fastq:
+				if self.delete_intermediate_files:
+					logging.info("Deleted trimmed Fasta file.")
+					subprocess.check_output(["rm",self.int_trimmed[out_file_num].name])
+				else:
+					logging.info("Zipping up trimmed file.\n")
+					subprocess.check_output(["gzip","-f", self.int_trimmed[out_file_num].name])
 			logging.info(bcolors.WARNING + "         ---------------\n" + bcolors.ENDC)
 
 		logging.info( bcolors.HEADER + "--------------------------------------\n\n" + bcolors.ENDC)

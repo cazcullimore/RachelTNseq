@@ -111,6 +111,7 @@ ReadLength      = -1
 MinimumHopCount = 16
 
 [options]
+DirectFastq             = True
 Debug                   = False
 Normalize               = Total
 DeleteIntermediateFiles = True
