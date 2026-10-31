@@ -8,7 +8,7 @@
 set -eo pipefail
 
 module load miniforge3
-conda activate Tnseq
+conda activate Tnseq # not needed I think
 module load bowtie2
 set -u
 
@@ -107,7 +107,7 @@ MinBaseOffset   = 0
 MaxBaseOffset   = 0
 Mismatches      = 0
 GeneTrim        = 10
-ReadLength      = 16
+ReadLength      = -1
 MinimumHopCount = 16
 
 [options]
