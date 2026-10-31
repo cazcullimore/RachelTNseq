@@ -132,7 +132,7 @@ class Gene(object):
 					self.start_trunc = self.start + user_percentage
 					self.end_trunc = self.end - user_percentage
 		except:
-			print "Seems like the trim length is giving me some problems. Setting it to 0 and continuing."
+			print("Seems like the trim length is giving me some problems. Setting it to 0 and continuing.")
 			
 	def create_intergenic_region(self, start, end, synonym, num_conditions):
 		#print "Creating intergenic region"
@@ -250,7 +250,7 @@ class HopSite(object):
 		new_line = [""]
 		new_line.append(syn)
 		new_line.extend(self.hops) # raw hops
-		normalized_hops = [int(round(a*b)) for a,b in zip(self.hops,norm_coef)]
+		normalized_hops = [a*b for a,b in zip(self.hops,norm_coef)]
 		new_line.extend(normalized_hops) #normalized hops
 		new_line.append(self.position)
 		new_line.append("")
@@ -269,7 +269,7 @@ class HopSite(object):
 			if self.strand == '-':
 				negate = -1
 		if igv_normalize:
-			igv_line.extend(str( negate * int(round(a*b))) for a,b in zip(self.hops,norm_coef))
+			igv_line.extend(str(negate * a*b) for a,b in zip(self.hops,norm_coef))
 		else:
 			igv_line.extend(list(str(negate * i) for i in self.hops))
 		return '\t'.join(igv_line)
